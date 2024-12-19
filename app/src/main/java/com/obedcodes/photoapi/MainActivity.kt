@@ -86,10 +86,11 @@ fun RecipeScreen(){
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(all=18.dp)
     ) {
         if (recipeList != null) {
-            // Display the list of todos using LazyColumn
+
+
             LazyColumn {
                 items(recipeList!!) { recipe ->
                     RecipeItem(recipe)
@@ -115,6 +116,7 @@ fun RecipeScreen(){
 }
 
 
+@OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun RecipeItem(recipe: Recipe){
 
@@ -129,15 +131,21 @@ fun RecipeItem(recipe: Recipe){
         Row {
 
 
+            GlideImage(
+                model = recipe.image,
+                contentDescription = "Recipe Image",
+                modifier = Modifier.size(200.dp)
+            )
 
-            AsyncImage(
+
+          /*  AsyncImage(
                 model = recipe.image,
                 contentDescription = "Image of ${recipe.name}",
                 modifier = Modifier
                     .size(100.dp) // Control size of the image
                     .clip(MaterialTheme.shapes.small), // Optional for rounded corners
                 contentScale = ContentScale.Crop // Fit image nicely inside size
-
+            )*/
             Spacer(modifier = Modifier.padding(8.dp))
 
             Text(
