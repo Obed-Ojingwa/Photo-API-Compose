@@ -1,12 +1,15 @@
 package com.obedcodes.photoapi
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -24,15 +27,18 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CardElevation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,13 +53,17 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.obedcodes.photoapi.data.Recipe
 import com.obedcodes.photoapi.data.RecipeResponse
 import com.obedcodes.photoapi.network.NetworkManager
+import com.obedcodes.photoapi.recipeextended.RecipeDetailsActivity
 import com.obedcodes.photoapi.ui.theme.PhotoAPITheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,180 +71,225 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PhotoAPITheme {
-                RecipeScreen()
+             RecipeScreen()
             }
         }
     }
-}
+    ///    TOdo completed                1
+    // I Created a new activity (RecipeDetailsActivity) that will display the details of a clicked recipe.
 
-// https://jsonplaceholder.typicode.com/photos
+    // https://jsonplaceholder.typicode.com/photos
 // https://dummyjson.com/recipes
-@Composable
-fun RecipeScreen(){
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun RecipeScreen() {
 
 
+        val apiUrl = "https://dummyjson.com/recipes"
+        val networkManager = NetworkManager()
+        var recipeList by remember { mutableStateOf<List<Recipe>?>(null) }
+        var errorMessage by remember { mutableStateOf<String?>(null) }
+        var isRefreshing by remember { mutableStateOf(false) }
 
-    val apiUrl = "https://dummyjson.com/recipes"
-    val networkManager = NetworkManager()
-    var recipeList by remember { mutableStateOf<List<Recipe>?>(null) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+        val context = LocalContext.current
 
-    // Fetch data asynchronously
-    LaunchedEffect(Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val fetchedTodos = networkManager.fetchRecipe(apiUrl)
-                if (fetchedTodos != null) {
-                    recipeList = fetchedTodos
-                } else {
-                    errorMessage = "Failed to fetch data. Please check your connection."
+        /* // PullRefresh state
+    val pullRefreshState = rememberPullToRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            refreshRecipes(apiUrl, networkManager, { recipes ->
+                recipeList = recipes
+                errorMessage = null
+                isRefreshing = false
+            }, { error ->
+                errorMessage = error
+                isRefreshing = false
+            })
+        }
+    )*/
+
+        // Fetch data asynchronously
+        LaunchedEffect(Unit) {
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    isRefreshing = true
+                    val fetchedRecipe = networkManager.fetchRecipe(apiUrl)
+                    if (fetchedRecipe != null) {
+                        recipeList = fetchedRecipe
+                    } else {
+                        errorMessage = "Failed to fetch data. Please check your connection."
+                    }
+                } catch (e: Exception) {
+                    errorMessage = "An unexpected error occurred: ${e.message}"
                 }
-            } catch (e: Exception) {
-                errorMessage = "An unexpected error occurred: ${e.message}"
             }
         }
-    }
 
-    // UI Layout
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(all=18.dp)
-    ) {
-        if (recipeList != null) {
-
-
-
-            Column {
-
-                Text(
-                    text = "Featured Recipe",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(8.dp)
-                )
-                LazyRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(recipeList!!.take(5)) { recipe ->
-                        FeaturedRecipeItem(recipe)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-
-                Text(
-                    text = "All Recipes",
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(8.dp)
-                )
-
-
-
-                LazyColumn (
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxHeight()
-                ){
-                    items(recipeList!!) { recipe ->
-                        RecipeItem(recipe)
-                    }
-                }
-
-            }
-        } else if (errorMessage != null) {
-            // Display the error message
-            Box(modifier = Modifier.align(Alignment.Center)) {
-                Text(
-                    text = errorMessage!!,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        } else {
-            // Show a loading spinner while data is being fetched
-            Box(modifier = Modifier.align(Alignment.Center)) {
-                CircularProgressIndicator()
-            }
-        }
-    }
-
-}
-
-
-@OptIn(ExperimentalGlideComposeApi::class)
-@Composable
-fun FeaturedRecipeItem(recipe: Recipe) {
-    Card(
-        modifier = Modifier
-            .width(250.dp)
-            .height(150.dp),
-        elevation = CardDefaults.cardElevation(8.dp)
-    ) {
-        Column(
+        // UI Layout
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp)
+                .padding(all = 18.dp)
         ) {
-            GlideImage(
-                model = recipe.image,
-                contentDescription = "Recipe Image",
-                modifier = Modifier
-                    .height(100.dp)
-                    .fillMaxWidth(),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = recipe.name,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (recipeList != null) {
+
+
+                Column {
+
+                    Text(
+                        text = "Featured Recipe",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(recipeList!!.take(5)) { recipe ->
+                            FeaturedRecipeItem(recipe)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+
+                    Text(
+                        text = "All Recipes",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(8.dp)
+                    )
+
+
+
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxHeight()
+                    ) {
+                        items(recipeList!!) { recipe ->
+                            // Navigating to RecipeDetailsActivity
+                            RecipeItem(recipe){clickedRecipe ->
+                                // val context = LocalContext.current has been defined above because of the error I encounterd doing it here
+                                val intent = Intent(context, RecipeDetailsActivity::class.java)
+                                intent.putExtra("recipe", clickedRecipe)
+                                startActivity(intent)
+                            }
+                        }
+                    }
+
+                }
+            } else if (errorMessage != null) {
+                // Display the error message
+                Box(modifier = Modifier.align(Alignment.Center)) {
+                    Text(
+                        text = errorMessage!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            } else {
+                // Show a loading spinner while data is being fetched
+                Box(modifier = Modifier.align(Alignment.Center)) {
+                    CircularProgressIndicator()
+                }
+            }
         }
+
     }
-}
 
 
-
-
-
-@OptIn(ExperimentalGlideComposeApi::class)
-@Composable
-fun RecipeItem(recipe: Recipe) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(1.dp),
-        elevation = CardDefaults.cardElevation(8.dp)
-    ) {
-        Row {
-            GlideImage(
-                model = recipe.image,
-                contentDescription = "Loaded from API",
+    @OptIn(ExperimentalGlideComposeApi::class)
+    @Composable
+    fun FeaturedRecipeItem(recipe: Recipe) {
+        Card(
+            modifier = Modifier
+                .width(250.dp)
+                .height(150.dp),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Column(
                 modifier = Modifier
-                    .size(120.dp),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.padding(8.dp))
-            Column {
+                    .fillMaxSize()
+                    .padding(8.dp)
+            ) {
+                GlideImage(
+                    model = recipe.image,
+                    contentDescription = "Recipe Image",
+                    modifier = Modifier
+                        .height(100.dp)
+                        .fillMaxWidth(),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = recipe.name,
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = recipe.cuisine,
-                    style = MaterialTheme.typography.bodyMedium
-                )
             }
         }
     }
+//       TOdo completed                   2
+  //  I Updated the RecipeItem composable to navigate to RecipeDetailsActivity when clicked
+    // using the .clickable modifier and I added a onClick as an argument to the parameter
+
+    @OptIn(ExperimentalGlideComposeApi::class)
+    @Composable
+    fun RecipeItem(recipe: Recipe, onClick : (Recipe) ->Unit) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(1.dp)
+                .clickable { onClick(recipe)  },
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Row {
+                GlideImage(
+                    model = recipe.image,
+                    contentDescription = "Loaded from API",
+                    modifier = Modifier
+                        .size(120.dp),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.padding(8.dp))
+                Column {
+                    Text(
+                        text = recipe.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = recipe.cuisine,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    }
+
+    private fun refreshRecipes(
+        apiUrl: String,
+        networkManager: NetworkManager,
+        onSuccess: (List<Recipe>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val fetchedRecipes = networkManager.fetchRecipe(apiUrl)
+                if (fetchedRecipes != null) {
+                    onSuccess(fetchedRecipes)
+                } else {
+                    onError("Failed to fetch data. Please check your connection.")
+                }
+            } catch (e: Exception) {
+                onError("An unexpected error occurred: ${e.message}")
+            }
+        }
+    }
+
+
 }
-
-
-
-

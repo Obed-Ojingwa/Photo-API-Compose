@@ -1,8 +1,11 @@
 package com.obedcodes.photoapi.data
 
+import java.io.Serializable
+
+
 data class RecipeResponse(
     val recipes: List<Recipe>
-)
+) : Serializable
 
 data class Recipe(
     val id: Int,
@@ -21,7 +24,7 @@ data class Recipe(
     val rating: Double,
     val reviewCount: Int,
     val mealType: List<String>
-)
+) : Serializable
 
 /*data class Recipe(
     val albumID : Int,
