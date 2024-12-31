@@ -149,7 +149,11 @@ class MainActivity : ComponentActivity() {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(recipeList!!.take(5)) { recipe ->
-                            FeaturedRecipeItem(recipe)
+                            FeaturedRecipeItem(recipe){clickedItem ->
+                                val intent = Intent(context, RecipeDetailsActivity::class.java)
+                                intent.putExtra("recipe", clickedItem)
+                                startActivity(intent)
+                            }
                         }
                     }
 
@@ -202,11 +206,12 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
-    fun FeaturedRecipeItem(recipe: Recipe) {
+    fun FeaturedRecipeItem(recipe: Recipe, onClick: (Recipe) -> Unit) {
         Card(
             modifier = Modifier
                 .width(250.dp)
-                .height(150.dp),
+                .height(150.dp)
+                .clickable { onClick(recipe) },
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(

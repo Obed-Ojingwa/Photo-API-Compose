@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -33,7 +34,7 @@ class RecipeDetailsActivity : ComponentActivity() {
             MaterialTheme {
                 recipe?.let {
                     RecipeDetailsScreen(it)
-                } ?: run {
+                }  ?:run{
                     Text("Recipe not found!")
                 }
             }
@@ -45,13 +46,13 @@ class RecipeDetailsActivity : ComponentActivity() {
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
 fun RecipeDetailsScreen(recipe: Recipe) {
-    logger()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        logger()
+
         GlideImage(
             model = recipe.image,
             contentDescription = recipe.name,
@@ -61,13 +62,19 @@ fun RecipeDetailsScreen(recipe: Recipe) {
             contentScale = ContentScale.Crop,
 
         )
-        logger()
+
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = recipe.name, style = MaterialTheme.typography.titleLarge)
+        Text(text = recipe.name, style = MaterialTheme.typography.titleLarge, color = Color.Blue)
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "Cuisine: ${recipe.cuisine}", style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = "Difficulty: ${recipe.difficulty}", style = MaterialTheme.typography.bodyMedium)
+
+        when(recipe.difficulty){
+            "Easy" ->  Text(text = "Difficulty: ${recipe.difficulty}", style = MaterialTheme.typography.bodyMedium, color = Color.Blue)
+            "Medium" -> Text(text = "Difficulty: ${recipe.difficulty}", style = MaterialTheme.typography.bodyMedium, color = Color.Green)
+            "Hard" -> Text(text = "Difficulty: ${recipe.difficulty}", style = MaterialTheme.typography.bodyMedium, color = Color.Red)
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = "Ingredients:", style = MaterialTheme.typography.titleSmall)
         recipe.ingredients.forEach { ingredient ->
@@ -79,8 +86,4 @@ fun RecipeDetailsScreen(recipe: Recipe) {
             Text("${index + 1}. $instruction", style = MaterialTheme.typography.bodyMedium)
         }
     }
-}
-
-fun logger(){
-    Log.i("ASYNCIMAGE", "HELLLLLO   ASYNCIMAGE HOW ARE YOU DOING")
 }
