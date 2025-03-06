@@ -75,9 +75,8 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    ///    TOdo completed                1
+    ///    TOdo completed         ---------------------------------       1
     // I Created a new activity (RecipeDetailsActivity) that will display the details of a clicked recipe.
-
     // https://jsonplaceholder.typicode.com/photos
 // https://dummyjson.com/recipes
     @OptIn(ExperimentalMaterial3Api::class)
@@ -87,41 +86,30 @@ class MainActivity : ComponentActivity() {
 
         val apiUrl = "https://dummyjson.com/recipes"
         val networkManager = NetworkManager()
+        // For my viewModel
+        var isDataFetched by remember { mutableStateOf(false) }
+
         var recipeList by remember { mutableStateOf<List<Recipe>?>(null) }
         var errorMessage by remember { mutableStateOf<String?>(null) }
         var isRefreshing by remember { mutableStateOf(false) }
 
         val context = LocalContext.current
 
-        /* // PullRefresh state
-    val pullRefreshState = rememberPullToRefreshState(
-        refreshing = isRefreshing,
-        onRefresh = {
-            isRefreshing = true
-            refreshRecipes(apiUrl, networkManager, { recipes ->
-                recipeList = recipes
-                errorMessage = null
-                isRefreshing = false
-            }, { error ->
-                errorMessage = error
-                isRefreshing = false
-            })
-        }
-    )*/
-
-        // Fetch data asynchronously
-        LaunchedEffect(Unit) {
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    isRefreshing = true
-                    val fetchedRecipe = networkManager.fetchRecipe(apiUrl)
-                    if (fetchedRecipe != null) {
-                        recipeList = fetchedRecipe
-                    } else {
-                        errorMessage = "Failed to fetch data. Please check your connection."
+        // Fetch data
+        if (!isDataFetched) {
+            LaunchedEffect(Unit) {
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        isRefreshing = true
+                        val fetchedRecipe = networkManager.fetchRecipe(apiUrl)
+                        if (fetchedRecipe != null) {
+                            recipeList = fetchedRecipe
+                        } else {
+                            errorMessage = "Failed to fetch data. Please check your connection."
+                        }
+                    } catch (e: Exception) {
+                        errorMessage = "An unexpected error occurred: ${e.message}"
                     }
-                } catch (e: Exception) {
-                    errorMessage = "An unexpected error occurred: ${e.message}"
                 }
             }
         }
@@ -149,7 +137,7 @@ class MainActivity : ComponentActivity() {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(recipeList!!.take(5)) { recipe ->
-                            FeaturedRecipeItem(recipe){clickedItem ->
+                            FeaturedRecipeItemRow(recipe){clickedItem ->
                                 val intent = Intent(context, RecipeDetailsActivity::class.java)
                                 intent.putExtra("recipe", clickedItem)
                                 startActivity(intent)
@@ -174,7 +162,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         items(recipeList!!) { recipe ->
                             // Navigating to RecipeDetailsActivity
-                            RecipeItem(recipe){clickedRecipe ->
+                            RecipeItemColumn(recipe){clickedRecipe ->
                                 // val context = LocalContext.current has been defined above because of the error I encounterd doing it here
                                 val intent = Intent(context, RecipeDetailsActivity::class.java)
                                 intent.putExtra("recipe", clickedRecipe)
@@ -206,7 +194,7 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
-    fun FeaturedRecipeItem(recipe: Recipe, onClick: (Recipe) -> Unit) {
+    fun FeaturedRecipeItemRow(recipe: Recipe, onClick: (Recipe) -> Unit) {
         Card(
             modifier = Modifier
                 .width(250.dp)
@@ -243,7 +231,7 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
-    fun RecipeItem(recipe: Recipe, onClick : (Recipe) ->Unit) {
+    fun RecipeItemColumn(recipe: Recipe, onClick : (Recipe) ->Unit) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()

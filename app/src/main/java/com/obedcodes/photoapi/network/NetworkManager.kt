@@ -1,5 +1,6 @@
 package com.obedcodes.photoapi.network
 
+import android.annotation.SuppressLint
 import com.google.gson.Gson
 import com.obedcodes.photoapi.data.Recipe
 import com.obedcodes.photoapi.data.RecipeResponse
@@ -12,6 +13,9 @@ class NetworkManager {
     private val client = OkHttpClient()
     private val gson = Gson()
 
+
+    // I will move this to a viewModel
+    @SuppressLint("SuspiciousIndentation")
     fun fetchRecipe(apiUrl: String): List<Recipe>? {
 
         try {

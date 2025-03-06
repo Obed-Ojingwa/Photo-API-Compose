@@ -41,6 +41,8 @@ android {
 
 dependencies {
 
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
+
     implementation("androidx.compose.material3:material3:1.3.0-beta04")
 
     implementation ("com.google.accompanist:accompanist-swiperefresh:0.36.0")
